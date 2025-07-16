@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg fill="none" height="64" viewBox="0 0 64 64" width="64" xmlns="http://www.w3.org/2000/svg">
+<!-- Blue circular background -->
+<circle cx="32" cy="32" fill="#2563EB" r="32"/>
+<!-- White "dData" text -->
+<text fill="white" font-family="Arial, sans-serif" font-size="18.0px" font-weight="bold" text-anchor="middle" x="32" y="38">dData</text>
+</svg>
