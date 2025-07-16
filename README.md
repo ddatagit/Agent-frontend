@@ -1,9 +1,8 @@
 # Lovable AI – Sandbox App
 
-A full-stack AI-powered app using **Next.js**, **Prisma**, **Inngest**, and **E2B**. Users can generate and submit sandbox data via form and preview it dynamically.
+Full-stack AI application leveraging Next.js, Prisma, Inngest, and E2B. Enables users to generate sandbox data via forms with real-time preview and dynamic web content creation.
 
-
-## Services
+Services
 
 | Service | Use                                  |
 | ------- | ------------------------------------ |
@@ -11,8 +10,7 @@ A full-stack AI-powered app using **Next.js**, **Prisma**, **Inngest**, and **E2
 | Inngest | Event orchestration (localhost:8288) |
 | Railway | API deployment                       |
 
-
-## Project Structure
+Project Structure
 
 ```
 /src              → App logic
@@ -21,7 +19,7 @@ A full-stack AI-powered app using **Next.js**, **Prisma**, **Inngest**, and **E2
 /docker-compose   → Docker setup
 ```
 
-## Build With
+Build With
 
 * Next.js 15 App Router
 * Prisma + Neon DB
@@ -29,7 +27,6 @@ A full-stack AI-powered app using **Next.js**, **Prisma**, **Inngest**, and **E2
 * E2B sandbox
 * Tailwind + Shadcn UI
 
-# Quick Start
 
 Main app:
 ```bash
@@ -40,13 +37,14 @@ Log ai agent process
 ```bash
 http://localhost:8288/runs
 ```
+# Quick Start
 
-# 1 create new .env or .env.docker, copy and paste this (Paste the content from the link, NOT the link itself ( ͠° ͟ʖ ͡° )). If you cannot open the link, sorry - you don't have authorization to use it ( •̀ᴗ•́ ).
+### 1. Create new .env or .env.docker, copy and paste this 
+(Paste the content from the link, NOT the link itself ( ͠° ͟ʖ ͡° ). If you cannot open the link, sorry - you don't have authorization to use it ( •̀ᴗ•́ ).
 
 https://docs.google.com/document/d/1nJDqi5JiPEhNa0Rxi7StyZ4ZfFpSAV-1ZIiFReG75DU/edit?tab=t.0
 
-
-## or using your own .env Example
+or using your own .env Example
 
 ```env
 DATABASE_URL="postgresql://<user>:<pass>@<neon-host>/<db>?sslmode=require"
@@ -55,7 +53,9 @@ E2B_API_KEY="e2b_..."
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
 ```
 
-### Option 1: Local Dev
+### 2 Run it 
+
+Option 1: Local Dev
 
 ```bash
 chmod +x dev.sh
@@ -63,7 +63,7 @@ chmod +x dev.sh
 ```
 dev.sh will starts Prisma, Inngest Dev Server, and the app.
 
-### Option 2: Docker
+Option 2: Docker
 
 
 ```bash
