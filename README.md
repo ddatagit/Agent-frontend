@@ -29,7 +29,6 @@ A full-stack AI-powered app using **Next.js**, **Prisma**, **Inngest**, and **E2
 * E2B sandbox
 * Tailwind + Shadcn UI
 
-```
 # Quick Start
 
 Main app:
