@@ -3,7 +3,7 @@ services:
     container_name: lovable-ai-app
     build:
       context: .
-      dockerfile: Dockerfile.typescript 
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"     # Next.js dev server
       - "8288:8288"     # Inngest Dev Server
