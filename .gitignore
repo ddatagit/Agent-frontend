@@ -1,5 +1,18 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Python-related cache (for Agent-Python and others)
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.lock
+*.log
+
+# If you only want to target inside Agent-Python specifically:
+# Agent-Python/__pycache__/
+# Agent-Python/*.py[cod]
+# Agent-Python/*.lock
+
 # dependencies
 /node_modules/
 /.pnp
