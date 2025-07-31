@@ -20,6 +20,9 @@ An AI-powered full-stack app built with **Next.js**, **Prisma**, **Inngest**, **
 | **E2B**     | Secure sandboxed code execution       |
 | **FastAPI** | Python REST API wrapping LangChain agent |
 
+Testing api database server:
+
+https://sandbox-api-production.up.railway.app/api/save-data
 
 
 ## Project Structure
@@ -40,27 +43,27 @@ An AI-powered full-stack app built with **Next.js**, **Prisma**, **Inngest**, **
 * E2B sandbox
 * Tailwind + Shadcn UI
 
-```
+
 # Quick Start
 
 Main app:
 
- http://localhost:3000
+http://localhost:3000
 
-Log ai agent process
+Log ai agent process:
 
 http://localhost:8288/runs
 
-python ai agent process server
+python ai agent process server:
 
 http://localhost:8000/docs
 
-# 1 create new .env or .env.docker, copy and paste this (Paste content in link, NOT paste this link ( ͠° ͟ʖ ͡° )) if cannot open the link, sorry you don't have authorization ( •̀ᴗ•́ )
+## 1 create new .env or .env.docker, copy and paste this (Paste content in link, NOT paste this link ( ͠° ͟ʖ ͡° )) if cannot open the link, sorry you don't have authorization ( •̀ᴗ•́ )
 
 https://docs.google.com/document/d/1nJDqi5JiPEhNa0Rxi7StyZ4ZfFpSAV-1ZIiFReG75DU/edit?tab=t.0
 
 
-## or using your own .env Example
+## or using your own .env example:
 
 ```env
 DATABASE_URL="postgresql://<user>:<pass>@<neon-host>/<db>?sslmode=require"
@@ -114,21 +117,4 @@ docker build -t agentic-ai .
 
 docker run -p 8000:8000 agentic-ai
 ```
-
-main web:
-
-http://localhost:3000
-
----
-
-server:
-
-FastAPI
-
-http://localhost:3000
-
-inngest
-
-http://localhost:8288/runs
-
 
