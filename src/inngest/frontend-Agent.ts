@@ -1,3 +1,5 @@
+// not allow for run npm on e2b sanbox
+
 import { createAgent, openai, createTool, createNetwork, type Tool, createState, type Message} from "@inngest/agent-kit";
 import { inngest } from "./client";
 import { Result, Sandbox } from "@e2b/code-interpreter";
@@ -7,25 +9,6 @@ import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT, PROMPT_HOST_VERTIFY  } 
 import { lastAssistantTextMessageContent } from "./utils"; 
 import { prisma } from "@/lib/db";
 import { MessageRole, MessageType } from "@/generated/prisma";
-
-// -------------------- E2B TOOL: File System APIs --------------------
-// 📟 1. Terminal Commands
-// - Run bash/zsh commands inside the sandbox (e.g., npm install, node app.js, ls, cat file.ts)
-// - Capture stdout, stderr streams, Run scripts or Docker builds (e.g., /compile_page.sh)
-// 📁 2. File System APIs, Read/write/delete any file inside the sandbox
-// - Create entire projects from templates (like next.js, react, python, etc.)
-// - Modify code via agent tools (i.e., updating a specific file line or content programmatically)
-// 🌐 3. Web Server Hosting (Preview URLs), Serve apps inside the sandbox on a public URL (sandbox.getHost(port))
-// Useful for previewing generated React, Next.js, or Flask apps in real-time
-// 📦 4. Language Model Agents (via Inngest + AgentKit), Let GPT-4o or similar models:
-// - Edit or create code (create/update files)
-// - Execute commands (run tests, start app)
-// - Analyze output or logs
-// - Chain tools like terminal, readFiles, writeFiles as part of multi-step workflows
-// 📚 5. Use with Inngest + Functions, Trigger sandbox actions based on events like:
-// - HTTP webhook
-// - Scheduled cron job
-// - User interaction in frontend (e.g. “Build my AI” button)
 
 //  interface AgentState
 interface AgentState{
@@ -109,85 +92,6 @@ function createFileTool(sandboxId: string) {
   });
 }
 
-// // -------------------- TOOL External Api Submit: -------------------- 
-// function createRuntimeDataSubmitTool() {
-//   return createTool({
-//     name: "runtimeDataSubmitTool",
-//     description: "Submit runtime data to external API",
-//     parameters: z.object({
-//       projectId: z.string(),
-//       data: z.record(z.any()),
-//     }),
-//     handler: async ({ projectId, data }) => {
-//       try {
-//         console.log("📤 Sending runtimeData:", { projectId, data });
-
-//         const res = await fetch("https://sandbox-api-production.up.railway.app/api/save-runtime", {
-//           method: "POST",
-//           headers: { "Content-Type": "application/json" },
-//           body: JSON.stringify({ projectId, data }),
-//         });
-
-//         const json = await res.json().catch(() => ({}));
-//         console.log("📥 Response from runtimeData API:", json);
-
-//         if (!res.ok) {
-//           return { error: json?.error ?? "Failed to save runtime data" };
-//         }
-
-//         return { success: true, id: json.id ?? null };
-//       } catch (err: any) {
-//         console.error("❌ Runtime API error:", err);
-//         return { error: err.message ?? "Runtime request failed" };
-//       }
-//     },
-//   });
-// }
-
-// function createExternalApiSubmitTool() {
-//   return createTool({
-//     name: "externalApiSubmitTool",
-//     description: "Submit JSON data to external API",
-//     parameters: z.object({
-//       projectId: z.string(),
-//       payload: z.record(z.any()),
-//     }),
-//     handler: async ({ projectId, payload }) => {
-//       try {
-//         const url = "https://sandbox-api-production.up.railway.app/api/save-data";
-
-//         console.log("📤 Sending to external API:", { url, projectId, payload });
-
-//         const res = await fetch(url, {
-//           method: "POST",
-//           headers: {
-//             "Content-Type": "application/json",
-//           },
-//           body: JSON.stringify({ projectId, payload }),
-//         });
-
-//         const json = await res.json().catch(() => ({}));
-//         console.log("📥 Response from API:", json);
-
-//         if (!res.ok) {
-//           console.error(`❌ API responded with status ${res.status}`);
-//           return { error: json?.error ?? `External API error (${res.status})` };
-//         }
-
-//         if (!json?.id) {
-//           console.warn("⚠️ No ID returned from API");
-//         }
-
-//         return { success: true, id: json.id ?? null };
-//       } catch (err: any) {
-//         console.error("❌ External API request failed:", err);
-//         return { error: err.message ?? "Request failed" };
-//       }
-//     },
-//   });
-// }
-
-
 // -------------------- TOOL: readFiles --------------------
 function createReadFileTool(sandboxId: string) {
   return createTool({
@@ -223,23 +127,6 @@ function createReadFileTool(sandboxId: string) {
   });
 }
 
-// -------------------- TOOL: Create database  --------------------
-// export function saveDatabase(db: CRMDatabase) {
-//   if (typeof window === "undefined") return;
-
-//   // Save to local storage
-//   localStorage.setItem("crm-database", JSON.stringify(db));
-
-//   // ✅ Send to external API in real-time
-//   const projectId = localStorage.getItem("projectId");
-//   if (projectId) {
-//     fetch("https://sandbox-api-production.up.railway.app/api/save-runtime", {
-//       method: "POST",
-//       headers: { "Content-Type": "application/json" },
-//       body: JSON.stringify({ projectId, data: db }),
-//     }).catch((err) => console.error("Runtime sync failed:", err));
-//   }
-// }
 
 // -------------------- RETRY HELPER --------------------
 // -------------------- RETRY CONFIG TYPE --------------------
@@ -327,7 +214,6 @@ async function throttleRun<T>(
   }
 }
 
-
 // -------------------- MAIN FUNCTION --------------------
 export const codeAgentFunction = inngest.createFunction(
   { id: "code-agent" },
@@ -361,7 +247,7 @@ export const codeAgentFunction = inngest.createFunction(
 
     const formattedMessages = messages.map((message) => ({
       type: "text",
-      role: message.role === MessageRole.assistant ? "assistant" : "user",
+      role: message.role === MessageRole.ASSISTANT? "assistant" : "user",
       content: message.content,
     }));
       return formattedMessages as Message[]; 
@@ -557,46 +443,7 @@ export const codeAgentFunction = inngest.createFunction(
       });
     });
 
-    // // Step 9: Submit to external API
-    // const externalApiSubmitTool = createExternalApiSubmitTool();
-    // await step.run("submit-to-external-api", async () => {
-    //   const handler = (externalApiSubmitTool as any).handler;
-    //   if (!handler) throw new Error("Tool handler not found");
-
-    //   const result = await handler({
-    //     projectId: event.data.projectId,
-    //     payload: {
-    //       summary,
-    //       files: runResult.state.data.files,
-    //     },
-    //   });
-
-    //   if ("error" in result) {
-    //     console.error("[externalApiSubmitTool] ❌", result.error);
-    //   } else {
-    //     console.log("[externalApiSubmitTool] ✅ Saved with ID:", result.id);
-    //   }
-    // });
-
-    // // Step 9.1: Submit runtime state
-    // const runtimeDataSubmitTool = createRuntimeDataSubmitTool();
-    // await step.run("submit-runtime-data", async () => {
-    //   const handler = (runtimeDataSubmitTool as any).handler;
-    //   if (!handler) throw new Error("Runtime data tool handler not found");
-
-    //   const result = await handler({
-    //     projectId: event.data.projectId,
-    //     data: runResult.state,
-    //   });
-
-    //   if ("error" in result) {
-    //     console.error("[runtimeDataSubmitTool] ❌", result.error);
-    //   } else {
-    //     console.log("[runtimeDataSubmitTool] ✅ Saved with ID:", result.id);
-    //   }
-    // });
-
-    // Step 10: Final return
+    // Step 9: Final return
     return {
       url: sandboxUrl,
       title: "Fragment",

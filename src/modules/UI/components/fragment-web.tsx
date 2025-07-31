@@ -24,36 +24,37 @@ export function FragmentWeb({ data }: Props) {
   };
 
   return (
-    <div className="w-full h-full overflow-y-auto overflow-x-hidden">
-      <div className= "p-2 boarder-b bg-sidebar flex items-center gap-x-2">
-        <Button size="sm" variant="outline" onClick={onRefresh}>
-            <RefreshCcwIcon />
-        </Button>
-        <Button 
-            size="sm" 
-            variant="outline" 
-            onClick={handleCopy}
-            disabled={!data.sandboxUrl || copied}
-            className="flex-1 justify-start text-start font-normal"
+  <div className="w-full h-full overflow-y-auto overflow-x-hidden">
+    <div className="p-2 boarder-b bg-sidebar flex items-center gap-x-2">
+      <Button size="sm" variant="outline" onClick={onRefresh}>
+        <RefreshCcwIcon />
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        onClick={handleCopy}
+        disabled={!data.sandboxUrl || copied}
+        className="flex-1 justify-start text-start font-normal"
+      >
+        <span className="truncate">{data.sandboxUrl}</span>
+      </Button>
+      <Hint text="Open in a new tab" side="bottom" align="start">
+        <Button
+          size="sm"
+          disabled={!data.sandboxUrl}
+          variant="outline"
+          onClick={() => {
+            if (!data.sandboxUrl) return;
+            window.open(data.sandboxUrl, "_blank");
+          }}
         >
-            <span className="trunecate">
-              {data.sandboxUrl}
-            </span>
+          <ExternalLinkIcon />
         </Button>
-        <Hint text="Open in a new tab" side = "bottom" align="start">
-            <Button
-            size = "sm"
-            disabled={!data.sandboxUrl}
-            variant="outline"
-            onClick={()=>{ 
-                if (!data.sandboxUrl) return;
-                window.open(data.sandboxUrl,"_blank");
-            }}
-            >
-                <ExternalLinkIcon />
-            </Button>
-        </Hint>
-      </div>
+      </Hint>
+    </div>
+
+    {/* ✅ Conditionally render iframe only if sandboxUrl is truthy */}
+    {data.sandboxUrl ? (
       <iframe
         key={fragmentKey}
         className="w-full h-full border rounded"
@@ -62,6 +63,9 @@ export function FragmentWeb({ data }: Props) {
         src={data.sandboxUrl}
         scrolling="yes"
       />
-    </div>
-  );
+    ) : (
+      <div className="p-4 text-muted-foreground">No preview available.</div>
+    )}
+  </div>
+);
 }

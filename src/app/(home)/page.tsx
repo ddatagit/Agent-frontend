@@ -44,11 +44,11 @@ const Page = () => {
         </div>
 
         <h1 className="text-2xl md:text-5xl font-bold text-center">
-          Build something with dData AI-Agent
+          What do you want to build?
         </h1>
 
         <p className="text-lg md:text-xl text-muted-foreground text-center">
-          Create apps and websites by chatting with AI-Agent
+          Describe your dream website and let our AI create the perfect template for you
         </p>
 
         <div className="max-w-3xl mx-auto w-full">
