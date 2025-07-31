@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/trpc/client";
 import { MessageCard } from "./message-card";
 import { MessageForm } from "./message-from";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageLoading } from "./message-loading";
 
 interface Props {
@@ -21,6 +21,8 @@ export const MessageContainer = ({
   const bottomRef = useRef<HTMLDivElement>(null);
   const lastAssistantMessageIdRef = useRef<string | null>(null);
 
+  const [isPolling, setIsPolling] = useState(true); // ✅ Poll control state
+
   const {
     data: messages = [],
     isLoading,
@@ -28,9 +30,15 @@ export const MessageContainer = ({
     error,
   } = useQuery({
     ...trpc.messages.getMany.queryOptions({ projectId }),
-    refetchInterval: 5000,
+    refetchInterval: isPolling ? 2000 : false, // ✅ Poll only when needed
   });
 
+  // ✅ Auto-scroll to bottom on new messages
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView();
+  }, [messages.length]);
+
+  // ✅ Track last assistant message with a fragment
   useEffect(() => {
     const lastAssistantMessage = messages.findLast(
       (message) => message.role?.toUpperCase?.() === "ASSISTANT"
@@ -45,10 +53,12 @@ export const MessageContainer = ({
     }
   }, [messages, onFragmentClick]);
 
-
+  // ✅ Enable polling only if last message is from USER
   useEffect(() => {
-    bottomRef.current?.scrollIntoView();
-  }, [messages.length]);
+    const lastMessage = messages[messages.length - 1];
+    const isLastFromUser = lastMessage?.role?.toUpperCase?.() === "USER";
+    setIsPolling(isLastFromUser);
+  }, [messages]);
 
   const lastMessage = messages[messages.length - 1];
   const isLastMessageUser = lastMessage?.role?.toUpperCase?.() === "USER";
@@ -76,10 +86,13 @@ export const MessageContainer = ({
             />
           ))}
 
+          {/* ✅ Show shimmer while waiting for assistant response */}
           {isLastMessageUser && !isError && <MessageLoading />}
+
           <div ref={bottomRef} />
         </div>
       </div>
+
       <div className="relative p-3 pt-1">
         <MessageForm projectId={projectId} />
       </div>

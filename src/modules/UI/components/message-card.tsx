@@ -167,28 +167,3 @@ export const MessageCard = ({
     </div>
   );
 };
-
-
-
-//// work code but it doesn't same as youtube video code (ref)
-//   return (
-//     <div className="border p-4 rounded shadow-sm bg-white space-y-2">
-//       <div className="text-xs font-semibold text-gray-500">
-//         {role} — {format(createdAt, "yyyy-MM-dd HH:mm:ss")}
-//       </div>
-
-//       <div className="text-sm whitespace-pre-wrap text-gray-800">
-//         {content}
-//       </div>
-
-//       {role === "ASSISTANT" && fragment && (
-//         <div
-//           onClick={() => onFragmentClick(fragment)}
-//           className="mt-2 text-sm text-blue-600 font-medium cursor-pointer"
-//         >
-//           {fragment.title || "Preview"}
-//         </div>
-//       )}
-//     </div>
-//   );
-// };

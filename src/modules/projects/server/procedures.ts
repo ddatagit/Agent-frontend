@@ -1,3 +1,5 @@
+// src/modules/projects/server/procedures.ts
+
 import { prisma } from "@/lib/db";
 import { inngest } from "@/inngest/client";
 import { baseProcedure, createTRPCRouter } from "@/trpc/init";
@@ -5,14 +7,19 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { MessageRole } from "@/generated/prisma";
 
+// Centralized tool-event mapping
+const toolEvents = {
+  "Daily Tasks": "daily-agent/run",
+  "Web Generator": "code-agent/run",
+  "Deep Search": "search-agent/run",
+} as const;
+
+const ToolEnum = z.enum(Object.keys(toolEvents) as [keyof typeof toolEvents]);
+
 export const projectsRouter = createTRPCRouter({
   // Get a single project by ID
   getOne: baseProcedure
-    .input(
-      z.object({
-        id: z.string().min(1, { message: "Id is required" }),
-      })
-    )
+    .input(z.object({ id: z.string().min(1, { message: "Id is required" }) }))
     .query(async ({ input }) => {
       const existingProject = await prisma.project.findUnique({
         where: { id: input.id },
@@ -32,16 +39,12 @@ export const projectsRouter = createTRPCRouter({
     });
   }),
 
-  // Create a new project with first message and trigger Inngest
+  // ✅ Create a new project with first message and selected tool
   create: baseProcedure
-    .input(
-      z.object({
-        value: z
-          .string()
-          .min(1, { message: "Prompt or value is required" })
-          .max(10000, { message: "Prompt or value is required" }),
-      })
-    )
+    .input(z.object({
+      value: z.string().min(1).max(10000),
+      tool: ToolEnum,
+    }))
     .mutation(async ({ input }) => {
       try {
         console.log("Creating project and message with:", input.value);
@@ -61,15 +64,16 @@ export const projectsRouter = createTRPCRouter({
           },
         });
 
+        const eventName = toolEvents[input.tool];
         await inngest.send({
-          name: "code-agent/run",
+          name: eventName,
           data: {
             value: input.value,
             projectId: createdProject.id,
           },
         });
 
-        console.log("✅ Inngest event sent");
+        console.log(`✅ Inngest event "${eventName}" sent`);
         return createdProject;
       } catch (err: any) {
         console.error("❌ Error in create mutation:", err);
@@ -91,27 +95,27 @@ export const projectsRouter = createTRPCRouter({
       return createdProject;
     }),
 
-  // ✅ Delete all projects
+  // Delete all projects
   deleteAll: baseProcedure.mutation(async () => {
     await prisma.project.deleteMany({});
     return { success: true };
   }),
 
+  // Delete one project
+  deleteOne: baseProcedure
+    .input(z.object({ id: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      await prisma.project.delete({ where: { id: input.id } });
+      return { success: true };
+    }),
 
-deleteOne: baseProcedure
-  .input(z.object({ id: z.string().min(1) }))
-  .mutation(async ({ input }) => {
-    await prisma.project.delete({ where: { id: input.id } });
-    return { success: true };
-  }),
-
-rename: baseProcedure
-  .input(z.object({ id: z.string().min(1), name: z.string().min(1) }))
-  .mutation(async ({ input }) => {
-    return await prisma.project.update({
-      where: { id: input.id },
-      data: { name: input.name },
-    });
-  }),
-
+  // Rename project
+  rename: baseProcedure
+    .input(z.object({ id: z.string().min(1), name: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      return await prisma.project.update({
+        where: { id: input.id },
+        data: { name: input.name },
+      });
+    }),
 });

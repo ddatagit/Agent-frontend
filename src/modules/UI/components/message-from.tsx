@@ -1,5 +1,7 @@
+"use client";
+
 import { useForm } from "react-hook-form";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -9,9 +11,11 @@ import {
   Loader2Icon,
   FileUpIcon,
   XIcon,
+  ChevronDownIcon,
 } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import * as XLSX from "xlsx";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 
 import { cn } from "@/lib/utils";
 import { useTRPC } from "@/trpc/client";
@@ -22,12 +26,13 @@ interface Props {
   projectId: string;
 }
 
+const toolList = ["Daily Tasks", "Web Generator", "Deep Search"] as const;
+const ToolEnum = z.enum(toolList);
+
 const formSchema = z.object({
-  value: z
-    .string()
-    .min(1, { message: "Prompt or value is required" })
-    .max(999999, { message: "Prompt must be under 1000000 characters" }),
-  projectId: z.string().min(1, { message: "Project ID is required" }),
+  value: z.string().min(1).max(999_999),
+  projectId: z.string().min(1),
+  tool: ToolEnum,
 });
 
 export const MessageForm = ({ projectId }: Props) => {
@@ -37,47 +42,66 @@ export const MessageForm = ({ projectId }: Props) => {
 
   const [excelFileName, setExcelFileName] = useState<string | null>(null);
   const [excelData, setExcelData] = useState<string | null>(null);
-  const [isFocused, setIsFocused] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedTool, setSelectedTool] = useState<typeof toolList[number]>("Daily Tasks");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("selectedTool") as typeof selectedTool;
+    if (stored && toolList.includes(stored)) {
+      setSelectedTool(stored);
+    } else {
+      localStorage.setItem("selectedTool", "Daily Tasks");
+    }
+  }, []);
+
+  const handleToolChange = (tool: typeof selectedTool) => {
+    setSelectedTool(tool);
+    form.setValue("tool", tool); // sync tool to form
+    localStorage.setItem("selectedTool", tool);
+  };
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      value: "",
-      projectId,
-    },
+    defaultValues: { value: "", projectId, tool: selectedTool },
   });
 
   const createMessage = useMutation(
     trpc.messages.create.mutationOptions({
       onSuccess: () => {
-        form.reset();
+        form.reset({ value: "", projectId, tool: selectedTool });
         setExcelFileName(null);
         setExcelData(null);
         queryClient.invalidateQueries(
           trpc.messages.getMany.queryOptions({ projectId })
         );
       },
-      onError: (error) => {
-        toast.error(error.message);
-      },
+      onError: (error) => toast.error(error.message),
     })
   );
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    setIsSubmitting(true);
     const fullPrompt = excelData
       ? `${values.value}\n\n${excelData}`
       : values.value;
 
-    await createMessage.mutateAsync({
-      value: fullPrompt,
-      projectId,
-    });
+    try {
+      await createMessage.mutateAsync({
+        value: fullPrompt,
+        projectId,
+        tool: selectedTool,
+      });
+    } catch (err: any) {
+      toast.error(`Failed for ${selectedTool}`);
+      console.error(err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     try {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
@@ -89,17 +113,15 @@ export const MessageForm = ({ projectId }: Props) => {
         toast.error("Excel content is too large. Please reduce the data.");
         return;
       }
-
       setExcelData(stringified);
       setExcelFileName(file.name);
-    } catch (err) {
+    } catch {
       toast.error("Failed to parse Excel file.");
     }
   };
 
-  const isPending = createMessage.isPending;
+  const isPending = createMessage.isPending || isSubmitting;
   const isButtonDisabled = isPending || !form.formState.isValid;
-  const showUsage = false;
 
   return (
     <Form {...form}>
@@ -107,11 +129,9 @@ export const MessageForm = ({ projectId }: Props) => {
         onSubmit={form.handleSubmit(onSubmit)}
         className={cn(
           "relative border p-4 pt-1 rounded-xl bg-sidebar dark:bg-sidebar transition-all",
-          isFocused && "shadow-xs",
-          showUsage && "rounded-t-none"
+          isPending ? "opacity-80" : "shadow-sm"
         )}
       >
-        {/* Attached file name display */}
         {excelFileName && (
           <div className="mb-2 flex items-center justify-between bg-muted px-3 py-1 rounded text-sm text-muted-foreground">
             <span>File "{excelFileName}" attached</span>
@@ -120,18 +140,15 @@ export const MessageForm = ({ projectId }: Props) => {
               onClick={() => {
                 setExcelData(null);
                 setExcelFileName(null);
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = ""; // reset file input to allow same file
-                }
+                if (fileInputRef.current) fileInputRef.current.value = "";
               }}
-              className="text-muted-foreground hover:text-foreground"
+              className="hover:text-foreground"
             >
-              <XIcon className="w-4 h-4" />
+              <XIcon className="size-4" />
             </button>
           </div>
         )}
 
-        {/* Prompt Textarea */}
         <FormField
           control={form.control}
           name="value"
@@ -139,8 +156,6 @@ export const MessageForm = ({ projectId }: Props) => {
             <TextareaAutosize
               {...field}
               disabled={isPending}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => setIsFocused(false)}
               minRows={2}
               maxRows={8}
               className="pt-4 resize-none border-none w-full outline-none bg-transparent"
@@ -155,27 +170,50 @@ export const MessageForm = ({ projectId }: Props) => {
           )}
         />
 
-        {/* Footer: Tips + Buttons */}
         <div className="flex gap-x-2 items-end justify-between pt-2">
           <div className="text-[10px] text-muted-foreground font-mono">
-            <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
-              <span>&#8984;</span>Enter
-            </kbd>
-            &nbsp; to submit
+            <kbd className="inline-flex items-center gap-1 rounded border bg-muted px-1.5">
+              ⌘
+            </kbd>{" "}Enter to submit
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Upload Excel Button */}
+            <DropdownMenu.Root>
+              <DropdownMenu.Trigger asChild>
+                <Button variant="outline" size="sm" className="flex items-center gap-1">
+                  {selectedTool}
+                  <ChevronDownIcon className="size-4" />
+                </Button>
+              </DropdownMenu.Trigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.Content
+                  sideOffset={4}
+                  align="start"
+                  className="bg-popover text-popover-foreground rounded-md border p-1 shadow-md w-40"
+                >
+                  {toolList.map((tool) => (
+                    <DropdownMenu.Item
+                      key={tool}
+                      className={cn(
+                        "flex items-center px-2 py-1 text-sm cursor-pointer rounded-sm",
+                        tool === selectedTool
+                          ? "font-medium bg-accent text-accent-foreground"
+                          : "hover:bg-muted"
+                      )}
+                      onSelect={() => handleToolChange(tool)}
+                    >
+                      {tool}
+                    </DropdownMenu.Item>
+                  ))}
+                </DropdownMenu.Content>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Root>
+
             <Button
               type="button"
               variant="outline"
               size="icon"
-              onClick={() => {
-                if (fileInputRef.current) {
-                  fileInputRef.current.value = ""; // clear before re-click
-                  fileInputRef.current.click();
-                }
-              }}
+              onClick={() => fileInputRef.current?.click()}
             >
               <FileUpIcon className="size-4" />
             </Button>
@@ -187,10 +225,9 @@ export const MessageForm = ({ projectId }: Props) => {
               onChange={handleFileUpload}
             />
 
-            {/* Submit Button */}
             <button
-              disabled={isButtonDisabled}
               type="submit"
+              disabled={isButtonDisabled}
               className={cn(
                 "size-8 rounded-full flex items-center justify-center",
                 isButtonDisabled && "bg-muted-foreground border"

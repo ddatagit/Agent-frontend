@@ -6,26 +6,7 @@ import { z } from "zod";
 import { FRAGMENT_TITLE_PROMPT, PROMPT, RESPONSE_PROMPT, PROMPT_HOST_VERTIFY  } from "../../prompt";
 import { lastAssistantTextMessageContent } from "./utils"; 
 import { prisma } from "@/lib/db";
-
-
-// -------------------- E2B TOOL: File System APIs --------------------
-// 📟 1. Terminal Commands
-// - Run bash/zsh commands inside the sandbox (e.g., npm install, node app.js, ls, cat file.ts)
-// - Capture stdout, stderr streams, Run scripts or Docker builds (e.g., /compile_page.sh)
-// 📁 2. File System APIs, Read/write/delete any file inside the sandbox
-// - Create entire projects from templates (like next.js, react, python, etc.)
-// - Modify code via agent tools (i.e., updating a specific file line or content programmatically)
-// 🌐 3. Web Server Hosting (Preview URLs), Serve apps inside the sandbox on a public URL (sandbox.getHost(port))
-// Useful for previewing generated React, Next.js, or Flask apps in real-time
-// 📦 4. Language Model Agents (via Inngest + AgentKit), Let GPT-4o or similar models:
-// - Edit or create code (create/update files)
-// - Execute commands (run tests, start app)
-// - Analyze output or logs
-// - Chain tools like terminal, readFiles, writeFiles as part of multi-step workflows
-// 📚 5. Use with Inngest + Functions, Trigger sandbox actions based on events like:
-// - HTTP webhook
-// - Scheduled cron job
-// - User interaction in frontend (e.g. “Build my AI” button)
+import { MessageRole, MessageType } from "@/generated/prisma";
 
 //  interface AgentState
 interface AgentState{
@@ -144,6 +125,7 @@ function createReadFileTool(sandboxId: string) {
   });
 }
 
+
 // -------------------- RETRY HELPER --------------------
 // -------------------- RETRY CONFIG TYPE --------------------
 interface RetryConfig {
@@ -230,7 +212,6 @@ async function throttleRun<T>(
   }
 }
 
-
 // -------------------- MAIN FUNCTION --------------------
 export const codeAgentFunction = inngest.createFunction(
   { id: "code-agent" },
@@ -262,11 +243,11 @@ export const codeAgentFunction = inngest.createFunction(
         },
       });
 
-      const formattedMessages = messages.map((message) => ({
-        type: "text",
-        role: message.role === "ASSISTANT" ? "assistant" : "user",
-        content: message.content,
-      }));
+    const formattedMessages = messages.map((message) => ({
+      type: "text",
+      role: message.role === MessageRole.ASSISTANT? "assistant" : "user",
+      content: message.content,
+    }));
       return formattedMessages as Message[]; 
     });
       const state = createState<AgentState>(
@@ -423,20 +404,19 @@ export const codeAgentFunction = inngest.createFunction(
     });
 
     // Step 8: Persist via Prisma
-    // if isError
     await step.run("save-result", async () => {
       if (isError) {
         return await prisma.message.create({
           data: {
             projectId: event.data.projectId,
             content: "Something went wrong. Please try again.",
-            role: "ASSISTANT",
-            type: "ERROR",
+            role: MessageRole.ASSISTANT, 
+            type: MessageType.ERROR,     
             fragment: {
               create: {
-                sandboxUrl, // optional: helpful for debugging
+                sandboxUrl,
                 title: generateFragmentTitle(),
-                files: {},  // you can leave it empty or omit this if Prisma allows
+                files: {}, // optional
               },
             },
           },
@@ -448,8 +428,8 @@ export const codeAgentFunction = inngest.createFunction(
         data: {
           projectId: event.data.projectId,
           content: generateReponse(),
-          role: "ASSISTANT",
-          type: "RESULT",
+          role: MessageRole.ASSISTANT, 
+          type: MessageType.RESULT,
           fragment: {
             create: {
               sandboxUrl,
@@ -460,18 +440,13 @@ export const codeAgentFunction = inngest.createFunction(
         },
       });
     });
-    
 
-    // Step 9: Return payload
+    // Step 9: Final return
     return {
       url: sandboxUrl,
       title: "Fragment",
       files: runResult.state.data.files,
       summary,
     };
-    
-    }
-  );
-
-
-  
+  }
+);

@@ -38,10 +38,15 @@ model Fragment {
 }
 
 model SaveSandboxDataData {
-  id         String   @id @default(uuid())
-  data       Json
-  createdAt  DateTime @default(now())
+  id              String   @id @default(uuid())
+  userId          String?  // optional
+  date            DateTime?
+  transactionType String?
+  category        String?
+  amount          Float?
+  createdAt       DateTime @default(now())
 }
+
 
 enum MessageRole {
   USER

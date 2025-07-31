@@ -1,0 +1,21 @@
+FROM python:3.13-slim
+WORKDIR /app
+
+# Install CA certificates
+RUN apt-get update && apt-get install -y ca-certificates && update-ca-certificates
+
+# Install Poetry
+RUN pip install poetry
+
+# Copy lockfiles
+COPY pyproject.toml uv.lock ./
+
+# Install dependencies
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi --no-root
+
+# Copy app source
+COPY . .
+
+EXPOSE 8000
+CMD ["uvicorn", "server:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
