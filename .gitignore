@@ -5,7 +5,7 @@ __pycache__/
 *.py[cod]
 *.pyo
 *.pyd
-*.lock
+# *.lock
 *.log
 
 # If you only want to target inside Agent-Python specifically:
